@@ -198,7 +198,10 @@ onMounted(async () => {
 </script>
 
 <style>
-.wa-page { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; font-family: inherit; color: #1f2937; }
+/* This page is a top-level route (outside LayoutBasic), and the host body is
+   overflow-hidden with scrolling delegated to the layout's <main>. The page
+   must therefore provide its own full-viewport scroll container. */
+.wa-page { height: 100vh; overflow-y: auto; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; font-family: inherit; color: #1f2937; }
 .wa-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
 .wa-title { font-size: 24px; font-weight: 700; margin: 0; }
 .wa-subtitle { color: #6b7280; margin: 6px 0 0; }
