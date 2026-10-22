@@ -1,0 +1,33 @@
+{
+  "whatsapp_share": {
+    "title": "WhatsApp Share",
+    "subtitle": "Send invoices to customers on WhatsApp. Clicking a button opens a pre-filled chat — nothing is sent until you press send in WhatsApp.",
+    "back_to_invoices": "Back to invoices",
+    "settings": "Settings",
+    "default_country_code": "Default country code",
+    "default_country_code_hint": "Used when a customer phone number has no country code, e.g. 91 for India, 1 for the US.",
+    "message_template": "Message template",
+    "message_template_hint": "Placeholders (wrap each in curly braces): customer_name, invoice_number, amount_due, due_date, company_name",
+    "save_settings": "Save settings",
+    "saving": "Saving...",
+    "settings_saved": "Settings saved.",
+    "invoices": "Invoices",
+    "search_placeholder": "Search by invoice number",
+    "filter_unpaid": "Unpaid",
+    "filter_all": "All statuses",
+    "loading": "Loading invoices...",
+    "col_invoice": "Invoice",
+    "col_customer": "Customer",
+    "col_phone": "Phone",
+    "col_amount_due": "Amount due",
+    "col_due_date": "Due date",
+    "col_status": "Status",
+    "send_on_whatsapp": "Send on WhatsApp",
+    "no_valid_phone": "No valid phone number for this customer",
+    "no_invoices": "No invoices found.",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "menu_item": "Send on WhatsApp"
+  }
+}

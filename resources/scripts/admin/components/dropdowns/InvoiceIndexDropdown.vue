@@ -65,6 +65,15 @@
       {{ $t('invoices.resend_invoice') }}
     </BaseDropdownItem>
 
+    <!-- Send on WhatsApp (WhatsappShare module) -->
+    <BaseDropdownItem v-if="canSendWhatsapp(row)" @click="sendWhatsapp(row)">
+      <BaseIcon
+        name="ChatBubbleLeftRightIcon"
+        class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+      />
+      {{ $t('whatsapp_share.menu_item') }}
+    </BaseDropdownItem>
+
     <!-- Record payment  -->
     <router-link :to="`/admin/payments/${row.id}/create`">
       <BaseDropdownItem
@@ -115,6 +124,7 @@
 
 <script setup>
 import { useInvoiceStore } from '@/scripts/admin/stores/invoice'
+import { useModuleStore } from '@/scripts/admin/stores/module'
 import { useNotificationStore } from '@/scripts/stores/notification'
 import { useDialogStore } from '@/scripts/stores/dialog'
 import { useModalStore } from '@/scripts/stores/modal'
@@ -140,6 +150,7 @@ const props = defineProps({
 })
 
 const invoiceStore = useInvoiceStore()
+const moduleStore = useModuleStore()
 const modalStore = useModalStore()
 const notificationStore = useNotificationStore()
 const dialogStore = useDialogStore()
@@ -162,6 +173,26 @@ function canSendInvoice(row) {
     row.status == 'DRAFT' &&
     route.name !== 'invoices.view' &&
     userStore.hasAbilities(abilities.SEND_INVOICE)
+  )
+}
+
+// The WhatsappShare module owns everything WhatsApp: settings, phone
+// normalization, the message template and the wa.me URL. Core only
+// offers the menu entry (when the module is enabled and the user may
+// send invoices) and hands the invoice over via a window event, so
+// disabling or removing the module removes the feature cleanly.
+function canSendWhatsapp(row) {
+  return (
+    userStore.hasAbilities(abilities.SEND_INVOICE) &&
+    moduleStore.enableModules.includes('WhatsappShare')
+  )
+}
+
+function sendWhatsapp(invoice) {
+  window.dispatchEvent(
+    new CustomEvent('whatsapp-share:send-invoice', {
+      detail: { invoice },
+    })
   )
 }
 

@@ -1,0 +1,13 @@
+{
+    "name": "WhatsappShare",
+    "alias": "whatsapp-share",
+    "description": "Send invoices to customers on WhatsApp via wa.me links — from the invoice dropdown or the module's invoices page. No WhatsApp Business API required.",
+    "keywords": ["whatsapp", "invoices", "wa.me", "sharing"],
+    "priority": 0,
+    "providers": [
+        "Modules\\WhatsappShare\\Providers\\WhatsappShareServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

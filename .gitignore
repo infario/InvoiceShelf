@@ -1,4 +1,6 @@
-/Modules
+/Modules/*
+!/Modules/WhatsappShare
+!/Modules/WhatsappShare/**
 /node_modules
 /public/storage
 /public/hot
