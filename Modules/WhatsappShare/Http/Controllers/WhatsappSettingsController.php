@@ -20,7 +20,7 @@ class WhatsappSettingsController extends Controller
 {
     public const DEFAULT_COUNTRY_CODE = '91';
 
-    public const DEFAULT_MESSAGE_TEMPLATE = "Hello {customer_name}, your invoice {invoice_number} of {amount_due} is due on {due_date}. Thank you! - {company_name}";
+    public const DEFAULT_MESSAGE_TEMPLATE = 'Hello {customer_name}, your invoice {invoice_number} of {amount_due} is due on {due_date}. Thank you! - {company_name}';
 
     public function show(Request $request): JsonResponse
     {
