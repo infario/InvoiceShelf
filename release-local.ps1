@@ -14,8 +14,9 @@
                       SHA256SUMS.txt, RELEASE-NOTES.md
 
   Afterwards: FTP server-upload-<Version>.zip to the server, extract it at
-  the app root, run `php artisan optimize:clear`, and smoke-test.
-  See PATCH-UPLOADS.md.
+  the app root, run the module's activate-on-server.php once from public/
+  (key-guarded; sets the key, visit, delete - it also clears caches), and
+  smoke-test. See PATCH-UPLOADS.md.
 
 .EXAMPLE
   .\release-local.ps1 -Version 0.1.0
@@ -143,8 +144,8 @@ $notes += @(
     "",
     "## Deploy (client.infario.com)",
     "1. FTP ``server-upload-$Version.zip`` to the server and extract at the app root (overwrites ``Modules/WhatsappShare`` and ``public/build``).",
-    "2. Run ``php artisan optimize:clear``.",
-    "3. Smoke test: invoice list dropdown shows 'Send on WhatsApp' and opens the correct wa.me chat; /admin/whatsapp-share loads; settings save."
+    "2. Activate (shared hosting, no shell/phpMyAdmin): set a long random key in ``Modules/WhatsappShare/activate-on-server.php``, upload it to ``public/``, visit it once with ``?key=...``, then DELETE it. First install only - the modules-table row survives updates; re-run only if the dropdown item disappears.",
+    "3. Smoke test: invoice list dropdown shows 'Send on WhatsApp' and opens the correct wa.me chat; /admin/whatsapp-share loads and scrolls; settings save."
 )
 $notes | Set-Content (Join-Path $outDir 'RELEASE-NOTES.md')
 
@@ -167,4 +168,5 @@ Get-ChildItem $outDir -File |
 Write-Host ""
 Write-Host "Release artifacts in build\releases\$releaseName" -ForegroundColor Green
 Write-Host "Next: FTP server-upload-$Version.zip to the server, extract at the app root,"
-Write-Host "run 'php artisan optimize:clear', then smoke-test (see RELEASE-NOTES.md)."
+Write-Host "run Modules/WhatsappShare/activate-on-server.php from public/ (first install),"
+Write-Host "then smoke-test (see RELEASE-NOTES.md and PATCH-UPLOADS.md)."

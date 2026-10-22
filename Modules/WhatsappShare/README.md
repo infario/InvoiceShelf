@@ -33,9 +33,13 @@ existing "Mark as Sent"), and no PDF link is attached yet.
 ## Install
 
 1. Copy this `WhatsappShare` folder into your install's `Modules/`
-   directory (or upload the module zip via Admin → Modules).
-2. Enable it: Admin → Modules → WhatsappShare, or
-   `php artisan install:module WhatsappShare 0.1.0`.
+   directory.
+2. Enable it with `php artisan install:module WhatsappShare 0.1.2`, or —
+   on shared hosting with no shell — use the bundled
+   `activate-on-server.php`: set a long random key in it, upload it to
+   `public/`, visit it once in the browser with `?key=...`, then delete
+   it. Note that Admin → Modules is the marketplace UI: sideloaded
+   modules never appear there, with or without an API token.
 3. Open `/admin/whatsapp-share`, set your country code and template.
 
 ### Optional: the dropdown button (one-file core patch)

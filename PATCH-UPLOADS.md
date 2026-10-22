@@ -36,10 +36,33 @@ After each inbuilt update (rehearse on staging first):
    `public/build/` directory (Vite manifest + hashed chunks must match;
    never cherry-pick chunks). `Modules/` needs no re-upload unless the
    module itself changed.
-5. Clear caches once after PHP uploads: `php artisan optimize:clear`.
+5. Clear caches once after PHP uploads. Shared hosting has no shell, so
+   use the module's activation script (next section) — it ends with
+   `optimize:clear`. On a machine with shell, `php artisan optimize:clear`
+   does the same.
 6. Smoke test: login → invoice list → dropdown shows "Send on WhatsApp"
    → click opens the correct `wa.me` chat; `/admin/whatsapp-share`
    loads and settings save.
+
+## Activation on shared hosting (no shell, no phpMyAdmin)
+
+Admin → Modules is the **marketplace** UI: without an invoiceshelf.com
+API token it shows only the connect form, and sideloaded modules never
+appear there at all. Activate instead with the script shipped in the
+module at `Modules/WhatsappShare/activate-on-server.php`:
+
+1. Set `$expectedKey` in the script to a long random string.
+2. FTP it into `public/` under any name (e.g. `whatsapp-activate-temp.php`).
+3. Visit `https://client.infario.com/whatsapp-activate-temp.php?key=YOUR-KEY`.
+   It runs `ModuleInstaller::complete()` (statuses file +
+   `modules`-table row + cache clear) and prints the row back.
+4. **Delete the script from `public/` immediately.**
+5. Hard-refresh (`Ctrl+Shift+R`) and smoke test as above.
+
+The `modules` row and `storage/app/modules_statuses.json` live outside
+the updater's overwrite set, so activation survives inbuilt updates.
+Re-run the script only after re-uploading module PHP files, or if the
+dropdown item disappears.
 
 ## Local development notes
 
