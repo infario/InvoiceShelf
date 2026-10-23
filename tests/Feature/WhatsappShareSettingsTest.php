@@ -109,7 +109,7 @@ test('whatsapp share service provider appends a sidebar menu item', function () 
     (new AppServiceProvider(app()))->addMenus();
     WhatsappShareServiceProvider::appendMainMenuItem();
 
-    $item = collect(\Menu::get('main_menu')->items)
+    $item = collect(Menu::get('main_menu')->items)
         ->first(fn ($i) => ($i->data['name'] ?? null) === 'WhatsApp Share');
 
     expect($item)->not->toBeNull()
