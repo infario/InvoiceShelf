@@ -16,6 +16,11 @@
           <input v-model="settings.default_country_code" type="text" inputmode="numeric" placeholder="91" />
           <small>{{ $t('whatsapp_share.default_country_code_hint') }}</small>
         </label>
+        <label class="wa-field">
+          <span>{{ $t('whatsapp_share.payment_link') }}</span>
+          <input v-model="settings.payment_link" type="url" placeholder="https://infario.com/payments/" />
+          <small>{{ $t('whatsapp_share.payment_link_hint') }}</small>
+        </label>
         <label class="wa-field wa-field-wide">
           <span>{{ $t('whatsapp_share.message_template') }}</span>
           <textarea v-model="settings.message_template" rows="3" />
@@ -116,7 +121,7 @@ import {
   sendInvoiceViaWhatsapp,
 } from '../whatsapp'
 
-const settings = reactive({ default_country_code: '91', message_template: '' })
+const settings = reactive({ default_country_code: '91', payment_link: '', message_template: '' })
 const invoices = ref([])
 const page = ref(1)
 const lastPage = ref(1)
@@ -170,6 +175,7 @@ async function onSaveSettings() {
   try {
     await saveWhatsappSettings({
       default_country_code: settings.default_country_code,
+      payment_link: settings.payment_link,
       message_template: settings.message_template,
     })
     settingsSaved.value = true
@@ -192,24 +198,24 @@ async function onSend(invoice) {
 onMounted(async () => {
   const loaded = await fetchWhatsappSettings()
   settings.default_country_code = loaded.default_country_code
+  settings.payment_link = loaded.payment_link
   settings.message_template = loaded.message_template
   await loadInvoices(1)
 })
 </script>
 
 <style>
-/* This page is a top-level route (outside LayoutBasic), and the host body is
-   overflow-hidden with scrolling delegated to the layout's <main>. The page
-   must therefore provide its own full-viewport scroll container. */
-.wa-page { height: 100vh; overflow-y: auto; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; font-family: inherit; color: #1f2937; }
+/* Nested under LayoutBasic, so the host <main> handles page scroll. */
+.wa-page { max-width: 1100px; margin: 0 auto; padding: 24px 24px 48px; font-family: inherit; color: #1f2937; }
 .wa-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
 .wa-title { font-size: 24px; font-weight: 700; margin: 0; }
 .wa-subtitle { color: #6b7280; margin: 6px 0 0; }
 .wa-back { color: #4f46e5; text-decoration: none; font-size: 14px; }
 .wa-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
 .wa-card-title { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
-.wa-settings-grid { display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+.wa-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .wa-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.wa-field-wide { grid-column: 1 / -1; }
 .wa-field input, .wa-field textarea, .wa-filters input, .wa-filters select {
   border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: #fff;
 }

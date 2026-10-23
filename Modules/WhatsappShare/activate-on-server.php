@@ -1,5 +1,10 @@
 <?php
 
+use App\Space\ModuleInstaller;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+
 /**
  * One-time WhatsappShare activator for shared hosting (no shell, no
  * phpMyAdmin required).
@@ -25,7 +30,6 @@
  *
  * The script refuses to run while the placeholder key is unchanged.
  */
-
 $expectedKey = 'CHANGE-ME-to-a-long-random-string';
 
 /*
@@ -70,10 +74,10 @@ if ($appRoot === null) {
 require $appRoot.'/vendor/autoload.php';
 
 $app = require $appRoot.'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 try {
-    \App\Space\ModuleInstaller::complete('WhatsappShare', '0.1.2');
+    ModuleInstaller::complete('WhatsappShare', '0.1.3');
 
     // Belt and braces: the statuses file is what loads the provider.
     $statusesFile = $appRoot.'/storage/app/modules_statuses.json';
@@ -87,12 +91,12 @@ try {
 
     // Shared hosting has no `php artisan optimize:clear`; this is it.
     try {
-        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        Artisan::call('optimize:clear');
     } catch (Throwable $cacheError) {
         echo 'Note: cache clear skipped ('.$cacheError->getMessage().")\n";
     }
 
-    $row = \Illuminate\Support\Facades\DB::table('modules')
+    $row = DB::table('modules')
         ->where('name', 'WhatsappShare')
         ->first();
 
@@ -103,7 +107,7 @@ try {
 
     echo "OK — WhatsappShare is installed and enabled.\n";
     echo 'Row: '.json_encode($row)."\n";
-    echo "Statuses: ".json_encode($statuses)."\n";
+    echo 'Statuses: '.json_encode($statuses)."\n";
     echo "\nNow DELETE this file from public/, then hard-refresh (Ctrl+Shift+R)\n";
     echo "and check an invoice dropdown for 'Send on WhatsApp'.\n";
 } catch (Throwable $e) {

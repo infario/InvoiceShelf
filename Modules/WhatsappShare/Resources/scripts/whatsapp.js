@@ -15,8 +15,9 @@ let settingsPromise = null
 
 export const DEFAULT_SETTINGS = {
   default_country_code: '91',
+  payment_link: 'https://infario.com/payments/',
   message_template:
-    'Hello {customer_name}, your invoice {invoice_number} of {amount_due} is due on {due_date}. Thank you! - {company_name}',
+    'Hello {customer_name}, your invoice {invoice_number} of {amount_due} is due on {due_date}. Pay online: {payment_link} Thank you! - {company_name}',
 }
 
 export async function fetchWhatsappSettings(force = false) {
@@ -55,6 +56,9 @@ export async function saveWhatsappSettings(settings) {
  * Handles the shapes customers actually store: "+91 98200 12345",
  * "098200 12345" (trunk zero), "0091..." (international prefix) and
  * bare national numbers (country code prepended from settings).
+ * Numbers that already carry an international signal (+ / 00) or are
+ * longer than a typical national number (e.g. UK 447825290711) are
+ * left alone so the default country code is never double-prepended.
  * Returns null when what remains cannot be a real number (E.164
  * allows 8 to 15 digits), so callers can refuse instead of opening
  * a broken chat.
@@ -64,19 +68,31 @@ export function normalizePhone(raw, defaultCountryCode) {
     return null
   }
 
-  let digits = String(raw).replace(/\D/g, '')
+  const trimmed = String(raw).trim()
+  const alreadyInternational = trimmed.startsWith('+') || /^\s*00/.test(trimmed)
+
+  let digits = trimmed.replace(/\D/g, '')
 
   if (digits.startsWith('00')) {
     digits = digits.slice(2)
   }
 
-  if (digits.startsWith('0')) {
+  // Trunk-zero strip only for national numbers (098200… → 98200…).
+  if (!alreadyInternational && digits.startsWith('0')) {
     digits = digits.slice(1)
   }
 
   const countryCode = String(defaultCountryCode || '').replace(/\D/g, '')
 
-  if (countryCode && !digits.startsWith(countryCode)) {
+  // Indian mobiles are 10 digits; anything longer is treated as already
+  // E.164 (e.g. 447825290711) and must not get the default CC glued on.
+  const looksNational = digits.length <= 10
+  if (
+    !alreadyInternational &&
+    looksNational &&
+    countryCode &&
+    !digits.startsWith(countryCode)
+  ) {
     digits = countryCode + digits
   }
 
@@ -99,13 +115,14 @@ export function formatAmount(invoice) {
   return currency.code ? `${currency.code} ${formatted}` : formatted
 }
 
-export function renderMessage(template, invoice) {
+export function renderMessage(template, invoice, settings = {}) {
   const replacements = {
     '{customer_name}': invoice.customer?.name || '',
     '{invoice_number}': invoice.invoice_number || '',
     '{amount_due}': formatAmount(invoice),
     '{due_date}': invoice.formatted_due_date || invoice.due_date || '',
     '{company_name}': invoice.company?.name || '',
+    '{payment_link}': settings.payment_link || DEFAULT_SETTINGS.payment_link || '',
   }
 
   let message = template || DEFAULT_SETTINGS.message_template
@@ -136,7 +153,7 @@ export async function sendInvoiceViaWhatsapp(invoice) {
     )
   }
 
-  const message = renderMessage(settings.message_template, invoice)
+  const message = renderMessage(settings.message_template, invoice, settings)
 
   window.open(buildWaMeUrl(phone, message), '_blank', 'noopener')
 

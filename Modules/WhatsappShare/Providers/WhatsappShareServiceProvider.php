@@ -28,6 +28,7 @@ class WhatsappShareServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/Migrations'));
+        $this->registerMainMenuItem();
 
         // Serve the module's built frontend bundle through the host shell
         // (resources/views/app.blade.php iterates ModuleFacade::allScripts()).
@@ -42,6 +43,46 @@ class WhatsappShareServiceProvider extends ServiceProvider
         if (file_exists($style)) {
             ModuleFacade::style('whatsapp-share', $style);
         }
+    }
+
+    /**
+     * Append a sidebar entry after the host has built main_menu from
+     * config/invoiceshelf.php. Visible to users who can send invoices.
+     */
+    protected function registerMainMenuItem(): void
+    {
+        $this->app->booted(function () {
+            static::appendMainMenuItem();
+        });
+    }
+
+    /**
+     * Idempotent append used by the booted hook and by tests that rebuild
+     * the menu after the DB exists (tests skip addMenus during boot).
+     */
+    public static function appendMainMenuItem(): void
+    {
+        $menu = \Menu::get('main_menu');
+
+        if (! $menu) {
+            return;
+        }
+
+        $already = collect($menu->items)->contains(
+            fn ($item) => ($item->data['name'] ?? null) === 'WhatsApp Share'
+        );
+
+        if ($already) {
+            return;
+        }
+
+        $menu->add('whatsapp_share.nav_title', '/admin/whatsapp-share')
+            ->data('icon', 'ChatBubbleLeftRightIcon')
+            ->data('name', 'WhatsApp Share')
+            ->data('owner_only', false)
+            ->data('ability', 'send-invoice')
+            ->data('model', '')
+            ->data('group', 2);
     }
 
     /**

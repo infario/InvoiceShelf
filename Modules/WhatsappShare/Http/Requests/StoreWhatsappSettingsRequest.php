@@ -14,6 +14,7 @@ class StoreWhatsappSettingsRequest extends FormRequest
         return [
             // International dialing code without '+' or leading zeros, e.g. 91, 1, 44.
             'default_country_code' => ['required', 'string', 'regex:/^[1-9][0-9]{0,3}$/'],
+            'payment_link' => ['nullable', 'string', 'url', 'max:500'],
             'message_template' => ['required', 'string', 'max:1000'],
         ];
     }

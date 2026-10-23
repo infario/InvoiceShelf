@@ -128,7 +128,7 @@ Compress-Archive -Path (Join-Path $serverStage '*') -DestinationPath $serverZip
 Compress-Archive -Path (Join-Path $moduleStage 'WhatsappShare') -DestinationPath $moduleZip
 
 # Core patch, regenerated against the base tag so it is always current.
-git diff $BaseTag -- resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue |
+git diff $BaseTag -- resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue resources/scripts/admin/admin-router.js |
     Set-Content (Join-Path $outDir 'invoice-dropdown-whatsapp.patch')
 
 # Release notes from commits touching the feature since the base tag.
@@ -139,7 +139,7 @@ $notes = @(
     "",
     "## Changes"
 )
-$notes += (git log "$BaseTag..HEAD" --oneline -- Modules/WhatsappShare resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue | ForEach-Object { "- $_" })
+$notes += (git log "$BaseTag..HEAD" --oneline -- Modules/WhatsappShare resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue resources/scripts/admin/admin-router.js | ForEach-Object { "- $_" })
 $notes += @(
     "",
     "## Deploy (client.infario.com)",

@@ -1,19 +1,20 @@
 # Fork runbook — WhatsApp Share on InvoiceShelf 2.4.x
 
 This fork (`infario/2.4`, based on the upstream 2.4.x tag the server runs)
-exists for one feature: WhatsApp invoice sharing. Its entire runtime core
-diff is **one file**:
+exists for one feature: WhatsApp invoice sharing. Its runtime core
+diff is **two files** (both are baked into `public/build/` on deploy —
+you upload the rebuilt frontend, not these sources):
 
 - `resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue`
-  (renders a "Send on WhatsApp" item when the WhatsappShare module is
-  enabled and dispatches a window event; all logic lives in
-  `Modules/WhatsappShare/`, which the inbuilt updater never touches —
-  `Modules` is in `update_protected_paths`.)
+  — "Send on WhatsApp" item when the module is enabled; dispatches a
+  window event (all WhatsApp logic stays in the module).
+- `resources/scripts/admin/admin-router.js` — names the `/admin`
+  LayoutBasic route `admin` so the module can nest
+  `/admin/whatsapp-share` as a child (sidebar + header intact).
 
-Supporting, non-runtime changes in the fork: `Modules/WhatsappShare/`
-(module source + committed `dist/`), `.gitignore` (tracks the module),
-`tests/Feature/WhatsappShareSettingsTest.php`, this runbook. None of
-those are uploaded to the server except the module folder itself.
+All other logic lives in `Modules/WhatsappShare/` (updater never
+touches it — `Modules` is in `update_protected_paths`). Supporting
+fork-only files: `.gitignore`, tests, this runbook.
 
 ## Production update procedure (inbuilt updater + re-upload)
 
@@ -26,7 +27,7 @@ After each inbuilt update (rehearse on staging first):
 
 1. Locally: `git fetch upstream --tags`, merge the new tag into
    `infario/2.4` (`git merge 2.4.8`). Conflicts are expected at most in
-   the dropdown file above.
+   the two core files above.
 2. Verify: `php artisan test --compact --filter=WhatsappShareSettingsTest`
    plus the invoice suite, then `pnpm build`.
 3. Generate the upload list against the **new** tag — never from memory,

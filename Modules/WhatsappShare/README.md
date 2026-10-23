@@ -14,9 +14,12 @@ no cost.
 - **Module page** at `/admin/whatsapp-share` — searchable/filterable
   invoice list with a Send button per row, works with or without the
   core patch.
-- **Per-company settings** on the same page: default country code and a
-  message template with `{customer_name}`, `{invoice_number}`,
-  `{amount_due}`, `{due_date}` and `{company_name}` placeholders.
+- **Sidebar menu** — "WhatsApp" next to Invoices (users who can send
+  invoices).
+- **Per-company settings** on the same page: default country code,
+  payment link, and a message template with `{customer_name}`,
+  `{invoice_number}`, `{amount_due}`, `{due_date}`, `{company_name}`
+  and `{payment_link}` placeholders.
 - **Phone normalization** — handles `+91 98200 12345`, trunk-zero and
   `0091...` formats and bare national numbers; unusable numbers disable
   the button instead of opening a broken chat.

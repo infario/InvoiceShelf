@@ -5,9 +5,11 @@
     "back_to_invoices": "Back to invoices",
     "settings": "Settings",
     "default_country_code": "Default country code",
-    "default_country_code_hint": "Used when a customer phone number has no country code, e.g. 91 for India, 1 for the US.",
+    "default_country_code_hint": "Used when a customer phone number has no country code, e.g. 91 for India, 1 for the US. Numbers that already include + or a country code are left unchanged.",
+    "payment_link": "Payment link",
+    "payment_link_hint": "Inserted wherever the template uses payment_link (wrap in curly braces). Example: https://infario.com/payments/",
     "message_template": "Message template",
-    "message_template_hint": "Placeholders (wrap each in curly braces): customer_name, invoice_number, amount_due, due_date, company_name",
+    "message_template_hint": "Placeholders (wrap each in curly braces): customer_name, invoice_number, amount_due, due_date, company_name, payment_link",
     "save_settings": "Save settings",
     "saving": "Saving...",
     "settings_saved": "Settings saved.",
@@ -28,6 +30,7 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page",
-    "menu_item": "Send on WhatsApp"
+    "menu_item": "Send on WhatsApp",
+    "nav_title": "WhatsApp"
   }
 }
