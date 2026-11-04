@@ -15,6 +15,12 @@ import _ from 'lodash'
 import { useInvoiceStore } from './invoice'
 import { useNotificationStore } from '@/scripts/stores/notification'
 import { useNotesStore } from './note'
+import {
+  FREQUENCY_SENTINELS,
+  parseMonthlyCron,
+  parseYearlyCron,
+  toDateParts,
+} from '@/scripts/admin/helpers/recurring-frequency'
 
 export const useRecurringInvoiceStore = (useWindow = false) => {
   const defineStoreFunc = useWindow ? window.pinia.defineStore : defineStore
@@ -32,6 +38,13 @@ export const useRecurringInvoiceStore = (useWindow = false) => {
       selectAllField: false,
       newRecurringInvoice: {
         ...recurringInvoiceStub(),
+      },
+      // UI-only fields for the simple yearly/monthly builders (not persisted).
+      frequencyBuilder: {
+        day: 1,
+        month: 1,
+        hour: 0,
+        minute: 0,
       },
 
       frequencies: [
@@ -72,8 +85,20 @@ export const useRecurringInvoiceStore = (useWindow = false) => {
           value: '0 0 1 * *',
         },
         {
+          label: global.t('recurring_invoices.frequency.every_month_on_day'),
+          value: FREQUENCY_SENTINELS.MONTHLY_ON_DAY,
+        },
+        {
           label: global.t('recurring_invoices.frequency.every_6_month'),
           value: '0 0 1 */6 *',
+        },
+        {
+          label: global.t('recurring_invoices.frequency.every_year_on_start_date'),
+          value: FREQUENCY_SENTINELS.YEARLY_ON_START,
+        },
+        {
+          label: global.t('recurring_invoices.frequency.every_year_on_date'),
+          value: FREQUENCY_SENTINELS.YEARLY_ON_DATE,
         },
         {
           label: global.t(
@@ -83,7 +108,7 @@ export const useRecurringInvoiceStore = (useWindow = false) => {
         },
         {
           label: global.t('recurring_invoices.frequency.custom'),
-          value: 'CUSTOM',
+          value: FREQUENCY_SENTINELS.CUSTOM,
         },
       ],
     }),
@@ -473,15 +498,61 @@ export const useRecurringInvoiceStore = (useWindow = false) => {
       },
 
       setSelectedFrequency() {
-        let data = this.frequencies.find((frequency) => {
-          return frequency.value === this.newRecurringInvoice.frequency
-        })
-        data
-          ? (this.newRecurringInvoice.selectedFrequency = data)
-          : (this.newRecurringInvoice.selectedFrequency = {
-              label: 'Custom',
-              value: 'CUSTOM',
-            })
+        const frequency = this.newRecurringInvoice.frequency
+        const exact = this.frequencies.find((item) => item.value === frequency)
+
+        if (exact) {
+          this.newRecurringInvoice.selectedFrequency = exact
+          return
+        }
+
+        const yearly = parseYearlyCron(frequency)
+        if (yearly) {
+          this.frequencyBuilder = {
+            day: yearly.day,
+            month: yearly.month,
+            hour: yearly.hour,
+            minute: yearly.minute,
+          }
+
+          const start = toDateParts(this.newRecurringInvoice.starts_at)
+          const matchesStart =
+            start &&
+            start.day === yearly.day &&
+            start.month === yearly.month &&
+            yearly.hour === 0 &&
+            yearly.minute === 0
+
+          this.newRecurringInvoice.selectedFrequency = matchesStart
+            ? this.frequencies.find(
+                (item) => item.value === FREQUENCY_SENTINELS.YEARLY_ON_START,
+              )
+            : this.frequencies.find(
+                (item) => item.value === FREQUENCY_SENTINELS.YEARLY_ON_DATE,
+              )
+          return
+        }
+
+        const monthly = parseMonthlyCron(frequency)
+        if (monthly) {
+          this.frequencyBuilder = {
+            ...this.frequencyBuilder,
+            day: monthly.day,
+            hour: monthly.hour,
+            minute: monthly.minute,
+          }
+          this.newRecurringInvoice.selectedFrequency = this.frequencies.find(
+            (item) => item.value === FREQUENCY_SENTINELS.MONTHLY_ON_DAY,
+          )
+          return
+        }
+
+        this.newRecurringInvoice.selectedFrequency = this.frequencies.find(
+          (item) => item.value === FREQUENCY_SENTINELS.CUSTOM,
+        ) || {
+          label: global.t('recurring_invoices.frequency.custom'),
+          value: FREQUENCY_SENTINELS.CUSTOM,
+        }
       },
 
       resetSelectedNote() {

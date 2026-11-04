@@ -58,6 +58,48 @@ test('a schedule that has not started yet counts from its start date', function 
     expect($next->greaterThanOrEqualTo(Carbon::parse($recurringInvoice->starts_at)))->toBeTrue();
 });
 
+test('a yearly cron on a fixed calendar date resolves to that month and day', function () {
+    // Domain renewals: "every year on 1 November at midnight" is stored as
+    // 0 0 1 11 * — the UX builds this; the scheduler must honour it.
+    $from = Carbon::parse('2026-10-15 12:00:00', config('app.timezone'));
+
+    $next = Carbon::parse(
+        RecurringInvoice::getNextInvoiceDate('0 0 1 11 *', $from),
+        config('app.timezone')
+    );
+
+    expect($next->month)->toBe(11)
+        ->and($next->day)->toBe(1)
+        ->and($next->year)->toBe(2026)
+        ->and($next->hour)->toBe(0);
+});
+
+test('a yearly cron after the anniversary jumps to the following year', function () {
+    $from = Carbon::parse('2026-11-02 00:00:00', config('app.timezone'));
+
+    $next = Carbon::parse(
+        RecurringInvoice::getNextInvoiceDate('0 0 1 11 *', $from),
+        config('app.timezone')
+    );
+
+    expect($next->month)->toBe(11)
+        ->and($next->day)->toBe(1)
+        ->and($next->year)->toBe(2027);
+});
+
+test('a monthly-on-day cron keeps the chosen day of month', function () {
+    $from = Carbon::parse('2026-10-15 12:00:00', config('app.timezone'));
+
+    $next = Carbon::parse(
+        RecurringInvoice::getNextInvoiceDate('0 9 7 * *', $from),
+        config('app.timezone')
+    );
+
+    expect($next->day)->toBe(7)
+        ->and($next->hour)->toBe(9)
+        ->and($next->greaterThan($from))->toBeTrue();
+});
+
 test('the cron webhook refuses every caller when no token is configured', function () {
     config(['services.cron_job.auth_token' => null]);
 

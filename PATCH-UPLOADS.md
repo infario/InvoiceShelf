@@ -1,9 +1,9 @@
 # Fork runbook — WhatsApp Share on InvoiceShelf 2.4.x
 
 This fork (`infario/2.4`, based on the upstream 2.4.x tag the server runs)
-exists for one feature: WhatsApp invoice sharing. Its runtime core
-diff is **two files** (both are baked into `public/build/` on deploy —
-you upload the rebuilt frontend, not these sources):
+exists for WhatsApp invoice sharing plus small admin UX fixes. Runtime
+core diffs are baked into `public/build/` on deploy (upload the rebuilt
+frontend, not these sources):
 
 - `resources/scripts/admin/components/dropdowns/InvoiceIndexDropdown.vue`
   — "Send on WhatsApp" item when the module is enabled; dispatches a
@@ -11,6 +11,9 @@ you upload the rebuilt frontend, not these sources):
 - `resources/scripts/admin/admin-router.js` — names the `/admin`
   LayoutBasic route `admin` so the module can nest
   `/admin/whatsapp-share` as a child (sidebar + header intact).
+- Recurring-invoice frequency UX — yearly/monthly date builders so users
+  need not type cron (`helpers/recurring-frequency.js`,
+  `RecurringInvoiceCreateBasicFields.vue`, store + `lang/en.json`).
 
 All other logic lives in `Modules/WhatsappShare/` (updater never
 touches it — `Modules` is in `update_protected_paths`). Supporting

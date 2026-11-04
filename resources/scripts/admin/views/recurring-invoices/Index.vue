@@ -264,6 +264,10 @@ import SendInvoiceModal from '@/scripts/admin/components/modal-components/SendIn
 import RecurringInvoiceIndexDropdown from '@/scripts/admin/components/dropdowns/RecurringInvoiceIndexDropdown.vue'
 import MoonwalkerIcon from '@/scripts/components/icons/empty/MoonwalkerIcon.vue'
 import abilities from '@/scripts/admin/stub/abilities'
+import {
+  parseMonthlyCron,
+  parseYearlyCron,
+} from '@/scripts/admin/helpers/recurring-frequency'
 
 const recurringInvoiceStore = useRecurringInvoiceStore()
 const customerStore = useCustomerStore()
@@ -359,7 +363,24 @@ function getFrequencyLabel(frequencyFormat) {
     return frequency.value === frequencyFormat
   })
 
-  return frequencyObj ? frequencyObj.label : `CUSTOM: ${frequencyFormat}`
+  if (frequencyObj) {
+    return frequencyObj.label
+  }
+
+  const yearly = parseYearlyCron(frequencyFormat)
+  if (yearly) {
+    return t('recurring_invoices.frequency.list_yearly', {
+      day: yearly.day,
+      month: yearly.month,
+    })
+  }
+
+  const monthly = parseMonthlyCron(frequencyFormat)
+  if (monthly) {
+    return t('recurring_invoices.frequency.list_monthly', { day: monthly.day })
+  }
+
+  return `CUSTOM: ${frequencyFormat}`
 }
 
 function refreshTable() {

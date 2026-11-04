@@ -50,7 +50,7 @@
         :calendar-button="true"
         calendar-button-icon="calendar"
         :invalid="v.starts_at.$error"
-        @change="getNextInvoiceDate()"
+        @change="onStartsAtChange"
       />
     </BaseInputGroup>
 
@@ -148,9 +148,70 @@
         label="label"
         :invalid="v.selectedFrequency.$error"
         object
-        @change="getNextInvoiceDate"
+        @change="onFrequencyPresetChange"
       />
     </BaseInputGroup>
+
+    <template v-if="showYearlyOnStart">
+      <p class="col-span-full m-0 text-xs text-gray-500">
+        {{ $t('recurring_invoices.frequency.yearly_on_start_hint') }}
+      </p>
+    </template>
+
+    <template v-if="showYearlyOnDate || showMonthlyOnDay">
+      <BaseInputGroup
+        :label="$t('recurring_invoices.frequency.day_of_month')"
+        :content-loading="isLoading"
+        required
+      >
+        <BaseMultiselect
+          v-model="recurringInvoiceStore.frequencyBuilder.day"
+          :content-loading="isLoading"
+          :options="dayOptions"
+          label="label"
+          value-prop="value"
+          @change="syncBuilderFrequency"
+        />
+      </BaseInputGroup>
+
+      <BaseInputGroup
+        v-if="showYearlyOnDate"
+        :label="$t('recurring_invoices.frequency.month_of_year')"
+        :content-loading="isLoading"
+        required
+      >
+        <BaseMultiselect
+          v-model="recurringInvoiceStore.frequencyBuilder.month"
+          :content-loading="isLoading"
+          :options="monthOptions"
+          label="label"
+          value-prop="value"
+          @change="syncBuilderFrequency"
+        />
+      </BaseInputGroup>
+
+      <BaseInputGroup
+        :label="$t('recurring_invoices.frequency.time_hour')"
+        :content-loading="isLoading"
+      >
+        <BaseMultiselect
+          v-model="recurringInvoiceStore.frequencyBuilder.hour"
+          :content-loading="isLoading"
+          :options="hourOptions"
+          label="label"
+          value-prop="value"
+          @change="syncBuilderFrequency"
+        />
+      </BaseInputGroup>
+
+      <p class="col-span-full m-0 text-xs text-gray-500">
+        {{
+          showYearlyOnDate
+            ? $t('recurring_invoices.frequency.yearly_on_date_hint')
+            : $t('recurring_invoices.frequency.monthly_on_day_hint')
+        }}
+      </p>
+    </template>
 
     <BaseInputGroup
       v-if="isCustomFrequency"
@@ -158,15 +219,19 @@
       :content-loading="isLoading"
       required
       :error="v.frequency.$error && v.frequency.$errors[0].$message"
+      class="col-span-full"
     >
       <BaseInput
         v-model="recurringInvoiceStore.newRecurringInvoice.frequency"
         :content-loading="isLoading"
-        :disabled="!isCustomFrequency"
         :invalid="v.frequency.$error"
         :loading="isLoadingNextDate"
-        @update:modelValue="debounceNextDate"
+        placeholder="0 0 1 11 *"
+        @update:model-value="debounceNextDate"
       />
+      <p class="mt-1 mb-0 text-xs text-gray-500">
+        {{ $t('recurring_invoices.frequency.custom_cron_hint') }}
+      </p>
     </BaseInputGroup>
 
     <ExchangeRateConverter
@@ -189,6 +254,13 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import ExchangeRateConverter from '@/scripts/admin/components/estimate-invoice-common/ExchangeRateConverter.vue'
+import {
+  FREQUENCY_SENTINELS,
+  buildMonthlyCron,
+  buildYearlyCron,
+  toDateParts,
+  yearlyCronFromStartsAt,
+} from '@/scripts/admin/helpers/recurring-frequency'
 
 const props = defineProps({
   v: {
@@ -218,13 +290,50 @@ const limits = reactive([
   { label: t('recurring_invoices.limit.count'), value: 'COUNT' },
 ])
 
-const isCustomFrequency = computed(() => {
-  return (
-    recurringInvoiceStore.newRecurringInvoice.selectedFrequency &&
-    recurringInvoiceStore.newRecurringInvoice.selectedFrequency.value ===
-      'CUSTOM'
-  )
-})
+const dayOptions = Array.from({ length: 31 }, (_, i) => ({
+  label: String(i + 1),
+  value: i + 1,
+}))
+
+const monthOptions = [
+  { label: '1 — January', value: 1 },
+  { label: '2 — February', value: 2 },
+  { label: '3 — March', value: 3 },
+  { label: '4 — April', value: 4 },
+  { label: '5 — May', value: 5 },
+  { label: '6 — June', value: 6 },
+  { label: '7 — July', value: 7 },
+  { label: '8 — August', value: 8 },
+  { label: '9 — September', value: 9 },
+  { label: '10 — October', value: 10 },
+  { label: '11 — November', value: 11 },
+  { label: '12 — December', value: 12 },
+]
+
+const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+  label: String(i).padStart(2, '0') + ':00',
+  value: i,
+}))
+
+const selectedFrequencyValue = computed(
+  () => recurringInvoiceStore.newRecurringInvoice.selectedFrequency?.value,
+)
+
+const isCustomFrequency = computed(
+  () => selectedFrequencyValue.value === FREQUENCY_SENTINELS.CUSTOM,
+)
+
+const showYearlyOnStart = computed(
+  () => selectedFrequencyValue.value === FREQUENCY_SENTINELS.YEARLY_ON_START,
+)
+
+const showYearlyOnDate = computed(
+  () => selectedFrequencyValue.value === FREQUENCY_SENTINELS.YEARLY_ON_DATE,
+)
+
+const showMonthlyOnDay = computed(
+  () => selectedFrequencyValue.value === FREQUENCY_SENTINELS.MONTHLY_ON_DAY,
+)
 
 const getStatusOptions = computed(() => {
   if (props.isEdit) {
@@ -244,14 +353,12 @@ const getStatusOptions = computed(() => {
 watch(
   () => recurringInvoiceStore.newRecurringInvoice.selectedFrequency,
   (newValue) => {
-    if (!recurringInvoiceStore.isFetchingInitialSettings) {
-      if (newValue && newValue.value !== 'CUSTOM') {
-        recurringInvoiceStore.newRecurringInvoice.frequency = newValue.value
-      } else {
-        recurringInvoiceStore.newRecurringInvoice.frequency = null
-      }
+    if (recurringInvoiceStore.isFetchingInitialSettings) {
+      return
     }
-  }
+
+    applyFrequencySelection(newValue?.value)
+  },
 )
 
 onMounted(() => {
@@ -265,6 +372,101 @@ function hasLimitBy(LimitBy) {
   return recurringInvoiceStore.newRecurringInvoice.limit_by === LimitBy
 }
 
+function onFrequencyPresetChange() {
+  // BaseMultiselect @change fires after v-model update; the watch handles sync.
+  getNextInvoiceDate()
+}
+
+function onStartsAtChange() {
+  if (showYearlyOnStart.value) {
+    applyYearlyFromStartsAt()
+  }
+  getNextInvoiceDate()
+}
+
+function applyFrequencySelection(value) {
+  if (!value) {
+    recurringInvoiceStore.newRecurringInvoice.frequency = null
+    return
+  }
+
+  if (value === FREQUENCY_SENTINELS.CUSTOM) {
+    // Keep existing cron when switching into Advanced while editing; clear only
+    // when the field is empty so the user can type a new expression.
+    if (!recurringInvoiceStore.newRecurringInvoice.frequency) {
+      recurringInvoiceStore.newRecurringInvoice.frequency = null
+    }
+    return
+  }
+
+  if (value === FREQUENCY_SENTINELS.YEARLY_ON_START) {
+    seedBuilderFromStartsAt()
+    applyYearlyFromStartsAt()
+    return
+  }
+
+  if (value === FREQUENCY_SENTINELS.YEARLY_ON_DATE) {
+    seedBuilderFromStartsAt()
+    syncBuilderFrequency()
+    return
+  }
+
+  if (value === FREQUENCY_SENTINELS.MONTHLY_ON_DAY) {
+    seedBuilderFromStartsAt()
+    syncBuilderFrequency()
+    return
+  }
+
+  // Fixed cron preset.
+  recurringInvoiceStore.newRecurringInvoice.frequency = value
+}
+
+function seedBuilderFromStartsAt() {
+  const parts = toDateParts(recurringInvoiceStore.newRecurringInvoice.starts_at)
+  if (!parts) {
+    return
+  }
+
+  recurringInvoiceStore.frequencyBuilder.day = parts.day
+  recurringInvoiceStore.frequencyBuilder.month = parts.month
+}
+
+function applyYearlyFromStartsAt() {
+  const cron = yearlyCronFromStartsAt(
+    recurringInvoiceStore.newRecurringInvoice.starts_at,
+    {
+      hour: recurringInvoiceStore.frequencyBuilder.hour || 0,
+      minute: recurringInvoiceStore.frequencyBuilder.minute || 0,
+    },
+  )
+
+  recurringInvoiceStore.newRecurringInvoice.frequency = cron
+}
+
+function syncBuilderFrequency() {
+  const value = selectedFrequencyValue.value
+  const builder = recurringInvoiceStore.frequencyBuilder
+
+  if (value === FREQUENCY_SENTINELS.YEARLY_ON_DATE) {
+    recurringInvoiceStore.newRecurringInvoice.frequency = buildYearlyCron({
+      day: builder.day,
+      month: builder.month,
+      hour: builder.hour,
+      minute: builder.minute || 0,
+    })
+  } else if (value === FREQUENCY_SENTINELS.MONTHLY_ON_DAY) {
+    recurringInvoiceStore.newRecurringInvoice.frequency = buildMonthlyCron({
+      day: builder.day,
+      hour: builder.hour,
+      minute: builder.minute || 0,
+    })
+  } else if (value === FREQUENCY_SENTINELS.YEARLY_ON_START) {
+    applyYearlyFromStartsAt()
+  }
+
+  debounceNextDate()
+}
+
 const debounceNextDate = useDebounceFn(() => {
   getNextInvoiceDate()
 }, 500)
@@ -272,7 +474,7 @@ const debounceNextDate = useDebounceFn(() => {
 async function getNextInvoiceDate() {
   const val = recurringInvoiceStore.newRecurringInvoice.frequency
 
-  if (!val) {
+  if (!val || Object.values(FREQUENCY_SENTINELS).includes(val)) {
     return
   }
 
